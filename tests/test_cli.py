@@ -14,9 +14,11 @@ from bookmark_rename.cli import (
     fetch_title,
     find_speed_dial,
     ensure_chrome_stopped,
+    discover_chrome_profiles,
     load_bookmarks,
     save_bookmarks,
     select_candidates,
+    select_bookmarks_path,
     update_checksums,
     update_titles,
 )
@@ -74,6 +76,60 @@ def bookmark_data() -> JsonObject:
             "synced": folder_node("3", "모바일 북마크", []),
         },
     }
+
+
+def create_profile(user_data_path: Path, directory_name: str) -> Path:
+    profile_path = user_data_path / directory_name
+    profile_path.mkdir(parents=True)
+    bookmarks_path = profile_path / "Bookmarks"
+    bookmarks_path.write_text("{}", encoding="utf-8")
+    return bookmarks_path
+
+
+def test_profile_discovery_sorts_default_and_numeric_profiles(tmp_path: Path) -> None:
+    create_profile(tmp_path, "Profile 10")
+    create_profile(tmp_path, "Default")
+    create_profile(tmp_path, "Profile 2")
+    create_profile(tmp_path, "Guest Profile")
+    (tmp_path / "Local State").write_text(
+        json.dumps(
+            {
+                "profile": {
+                    "info_cache": {
+                        "Default": {"name": "개인"},
+                        "Profile 2": {"name": "업무"},
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    profiles = discover_chrome_profiles(tmp_path)
+
+    assert [profile.directory_name for profile in profiles] == [
+        "Default",
+        "Profile 2",
+        "Profile 10",
+    ]
+    assert [profile.display_name for profile in profiles] == ["개인", "업무", "Profile 10"]
+
+
+def test_profile_selection_uses_single_profile_without_prompt(monkeypatch, tmp_path: Path) -> None:
+    bookmarks_path = create_profile(tmp_path, "Profile 1")
+    monkeypatch.setattr("builtins.input", lambda prompt: (_ for _ in ()).throw(AssertionError))
+
+    assert select_bookmarks_path(tmp_path) == bookmarks_path
+
+
+def test_profile_selection_prompts_for_multiple_profiles(monkeypatch, tmp_path: Path) -> None:
+    create_profile(tmp_path, "Profile 1")
+    selected_path = create_profile(tmp_path, "Profile 2")
+    answers = iter(["invalid", "3", "2"])
+    monkeypatch.setattr("builtins.input", lambda prompt: next(answers))
+
+    assert select_bookmarks_path(tmp_path) == selected_path
 
 
 def test_chrome_check_continues_without_prompt_when_not_running(monkeypatch) -> None:

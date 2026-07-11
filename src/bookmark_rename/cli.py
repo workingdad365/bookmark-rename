@@ -6,6 +6,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shutil
 import tempfile
 from collections.abc import Iterable
@@ -68,12 +69,113 @@ class BookmarkFile(BaseModel):
     roots: BookmarkRoots
 
 
-def default_bookmarks_path() -> Path:
-    """현재 Windows 사용자의 기본 Chrome 북마크 경로를 반환한다."""
+class ChromeProfile(BaseModel):
+    """북마크 파일이 존재하는 Chrome 프로필 정보를 나타낸다."""
+
+    directory_name: str
+    display_name: str
+    bookmarks_path: Path
+
+
+def chrome_user_data_path() -> Path:
+    """현재 Windows 사용자의 Chrome User Data 경로를 반환한다."""
     local_app_data = os.environ.get("LOCALAPPDATA")
     if not local_app_data:
         raise RuntimeError("LOCALAPPDATA environment variable is not set")
-    return Path(local_app_data) / "Google" / "Chrome" / "User Data" / "Default" / "Bookmarks"
+    return Path(local_app_data) / "Google" / "Chrome" / "User Data"
+
+
+def load_profile_display_names(user_data_path: Path) -> dict[str, str]:
+    """Chrome Local State에서 프로필 디렉터리별 표시 이름을 읽는다."""
+    local_state_path = user_data_path / "Local State"
+    if not local_state_path.is_file():
+        return {}
+    try:
+        with local_state_path.open(encoding="utf-8") as file:
+            local_state: JsonObject = json.load(file)
+    except (OSError, json.JSONDecodeError) as error:
+        LOGGER.warning("Failed to read Chrome profile names: %s", error)
+        return {}
+
+    info_cache = local_state.get("profile", {}).get("info_cache", {})
+    if not isinstance(info_cache, dict):
+        return {}
+    return {
+        str(directory_name): str(profile_info.get("name", directory_name))
+        for directory_name, profile_info in info_cache.items()
+        if isinstance(profile_info, dict)
+    }
+
+
+def discover_chrome_profiles(user_data_path: Path | None = None) -> list[ChromeProfile]:
+    """Bookmarks 파일이 있는 Default 및 Profile 숫자 디렉터리를 탐색한다."""
+    root = user_data_path or chrome_user_data_path()
+    if not root.is_dir():
+        raise FileNotFoundError(f"Chrome User Data directory not found: {root}")
+
+    display_names = load_profile_display_names(root)
+    profile_pattern = re.compile(r"Profile (\d+)")
+
+    def sort_key(path: Path) -> tuple[int, int]:
+        if path.name == "Default":
+            return 0, 0
+        match = profile_pattern.fullmatch(path.name)
+        return 1, int(match.group(1)) if match else 0
+
+    profile_directories = sorted(
+        (
+            path
+            for path in root.iterdir()
+            if path.is_dir()
+            and (path.name == "Default" or profile_pattern.fullmatch(path.name))
+            and (path / "Bookmarks").is_file()
+        ),
+        key=sort_key,
+    )
+    return [
+        ChromeProfile(
+            directory_name=path.name,
+            display_name=display_names.get(path.name, path.name),
+            bookmarks_path=path / "Bookmarks",
+        )
+        for path in profile_directories
+    ]
+
+
+def select_bookmarks_path(user_data_path: Path | None = None) -> Path | None:
+    """단일 프로필은 자동 선택하고 여러 프로필은 사용자에게 번호로 선택받는다."""
+    profiles = discover_chrome_profiles(user_data_path)
+    if not profiles:
+        root = user_data_path or chrome_user_data_path()
+        raise FileNotFoundError(f"Chrome Bookmarks file not found under: {root}")
+    if len(profiles) == 1:
+        profile = profiles[0]
+        LOGGER.info(
+            "Selected Chrome profile directory=%s name=%r",
+            profile.directory_name,
+            profile.display_name,
+        )
+        return profile.bookmarks_path
+
+    print("북마크를 수정할 Chrome 프로필을 선택하십시오:")
+    for number, profile in enumerate(profiles, start=1):
+        print(f"  {number}. {profile.display_name} ({profile.directory_name})")
+
+    while True:
+        try:
+            answer = input(f"프로필 번호를 입력하십시오 (1-{len(profiles)}): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            LOGGER.info("Operation cancelled during Chrome profile selection")
+            return None
+        if answer.isdecimal() and 1 <= int(answer) <= len(profiles):
+            selected = profiles[int(answer) - 1]
+            LOGGER.info(
+                "Selected Chrome profile directory=%s name=%r",
+                selected.directory_name,
+                selected.display_name,
+            )
+            return selected.bookmarks_path
+        print("올바른 프로필 번호를 입력하십시오.")
 
 
 def find_chrome_processes() -> list[psutil.Process]:
@@ -365,7 +467,9 @@ def main() -> None:
     try:
         if not ensure_chrome_stopped():
             return
-        path = args.bookmarks_file or default_bookmarks_path()
+        path = args.bookmarks_file or select_bookmarks_path()
+        if path is None:
+            return
         candidates, updated, backup_path = asyncio.run(run(path, args.rename_all))
     except (OSError, RuntimeError, ValueError, ValidationError, json.JSONDecodeError) as error:
         LOGGER.error("Bookmark update failed: %s", error)

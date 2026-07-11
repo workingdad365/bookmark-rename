@@ -4,6 +4,8 @@
 
 Chrome 기본 프로필의 `기타 북마크 > Speed Dial` 아래에 있는 URL 북마크 이름을 웹 페이지의 HTML `title`로 갱신한다. `Speed Dial`의 모든 하위 폴더를 재귀적으로 처리하며, 다른 폴더의 북마크는 수정하지 않는다.
 
+`Default`, `Profile 1`, `Profile 2` 등 실제 `Bookmarks` 파일이 있는 Chrome 프로필을 자동으로 탐색한다. 프로필이 하나면 자동 선택하고, 여러 개면 Chrome 프로필 이름과 디렉터리 목록을 표시한 뒤 수정할 프로필 번호를 입력받는다.
+
 ## 준비
 
 - Python 3.13
@@ -26,6 +28,15 @@ uv run bookmark-rename
 
 ```powershell
 uv run bookmark-rename --all
+```
+
+Chrome 프로필이 여러 개면 다음과 같이 대상 프로필을 선택한다.
+
+```text
+북마크를 수정할 Chrome 프로필을 선택하십시오:
+	1. 개인 (Default)
+	2. 업무 (Profile 1)
+프로필 번호를 입력하십시오 (1-2):
 ```
 
 Chrome이 실행 중이면 다음 확인 메시지가 나타난다.
