@@ -1,0 +1,10 @@
+{
+  "name": "yet-another-speed-dial-renamer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/background.js && node --check src/bookmarks.js && node --check src/app.js",
+    "test": "node --test"
+  }
+}

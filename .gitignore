@@ -1,24 +1,10 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# Node.js
+node_modules/
+coverage/
+.nyc_output/
+
+# 이전 Python 빌드 산출물
 *.egg-info/
-build/
-dist/
-
-# 가상 환경
-.venv/
-venv/
-env/
-
-# 테스트, 린트, 타입 검사
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.pyright/
-.coverage
-.coverage.*
-htmlcov/
 
 # 로컬 환경변수
 .env
@@ -40,6 +26,3 @@ Desktop.ini
 *.tmp
 *.swp
 *~
-
-# 북마크 백업
-Bookmarks.backup-*

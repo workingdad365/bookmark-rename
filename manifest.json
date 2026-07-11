@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Yet Another Speed Dial 이름 갱신",
+  "version": "1.0.0",
+  "description": "Speed Dial 북마크 이름을 웹 페이지 제목으로 갱신합니다.",
+  "permissions": ["bookmarks"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "options_page": "app.html",
+  "action": {
+    "default_title": "Speed Dial 이름 갱신"
+  }
+}

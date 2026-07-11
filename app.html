@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yet Another Speed Dial 이름 갱신</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">Y</div>
+      <div>
+        <p class="product-name">Yet Another Speed Dial</p>
+        <h1>북마크 이름 갱신</h1>
+      </div>
+      <span id="status-badge" class="status-badge">준비</span>
+    </header>
+
+    <main>
+      <section class="controls" aria-label="갱신 설정">
+        <fieldset class="mode-control" id="mode-control">
+          <legend>처리 범위</legend>
+          <label>
+            <input type="radio" name="mode" value="matched" checked>
+            <span>URL과 같은 이름만</span>
+          </label>
+          <label>
+            <input type="radio" name="mode" value="all">
+            <span>전체 북마크</span>
+          </label>
+        </fieldset>
+        <button id="start-button" class="primary-button" type="button">갱신 시작</button>
+      </section>
+
+      <p id="notice" class="notice" role="status" aria-live="polite"></p>
+
+      <section class="summary" aria-label="처리 현황">
+        <div><strong id="candidate-count">0</strong><span>대상</span></div>
+        <div><strong id="completed-count">0</strong><span>완료</span></div>
+        <div><strong id="updated-count">0</strong><span>변경</span></div>
+        <div><strong id="failed-count">0</strong><span>실패</span></div>
+      </section>
+
+      <section class="results" aria-labelledby="results-title">
+        <div class="section-heading">
+          <h2 id="results-title">처리 내역</h2>
+          <span id="folder-state">Speed Dial 확인 중</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">상태</th>
+                <th scope="col">기존 이름</th>
+                <th scope="col">변경된 이름</th>
+                <th scope="col">URL</th>
+              </tr>
+            </thead>
+            <tbody id="result-body"></tbody>
+          </table>
+          <p id="empty-state" class="empty-state">대상 북마크를 불러오는 중입니다.</p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
