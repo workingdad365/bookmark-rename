@@ -3,6 +3,12 @@
   "name": "Yet Another Speed Dial 이름 갱신",
   "version": "1.0.0",
   "description": "Speed Dial 북마크 이름을 웹 페이지 제목으로 갱신합니다.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": ["bookmarks"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "background": {
@@ -11,6 +17,12 @@
   },
   "options_page": "app.html",
   "action": {
-    "default_title": "Speed Dial 이름 갱신"
+    "default_title": "Speed Dial 이름 갱신",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   }
 }
